@@ -11,9 +11,9 @@
 #     column_key 显示 PRI的就为表的主键
 import time
 
-import pymysql
-from dbutility.DataSet import DataSet
-from dbutility import connutil
+from pymysql.cursors import Cursor
+from dbutility.data_set import DataSet
+from dbutility import conn_util
 
 
 # 准备使用decorator来封装方法
@@ -36,7 +36,7 @@ def datasetmaker(fun):
 
 # 查询sql语句执行结果封装方法 返回DataSet类型的数据
 @datasetmaker
-def execute_sql(cursor, sql_str: str):
+def execute_sql(cursor: Cursor, sql_str: str):
 
     cursor.execute(sql_str)
 
@@ -45,7 +45,7 @@ def execute_sql(cursor, sql_str: str):
 
 # 非查询类语句执行结果封装
 @datasetmaker
-def execute_do_sql(cursor, sql_str: str):
+def execute_do_sql(cursor: Cursor, sql_str: str):
 
     cursor.execute(sql_str)
 
@@ -54,7 +54,7 @@ def execute_do_sql(cursor, sql_str: str):
 
 # 非查询类语句批量处理
 @datasetmaker
-def execute_batch_do_sql(cursor, sql_list: list):
+def execute_batch_do_sql(cursor: Cursor, sql_list: list):
 
     for sql in sql_list:
         cursor.execute(sql)
@@ -68,19 +68,18 @@ def query_sql(sql_str: str):
     cursor = None
     try:
 
-        connector = connutil.get_connector()  # 获取数据库连接
-        cursor = connutil.get_cursor(connector)  # 获取数据库指针
+        connector = conn_util.get_connection()  # 获取数据库连接
+        cursor = conn_util.get_cursor(connector)  # 获取数据库指针
 
         data_set = execute_sql(cursor, sql_str)
     except Exception as e:
         print(e)
-        raise e
+        # raise e
     else:
         return data_set
-
     finally:
-        connutil.close_cursor(cursor)
-        connutil.close_connector(connector)
+        conn_util.close_cursor(cursor)
+        conn_util.close_connector(connector)
 
 
 # 执行非查询单条sql语句
@@ -88,20 +87,18 @@ def do_sql(sql_str: str):
     connector = None
     cursor = None
     try:
-        connector = connutil.get_connector()  # 获取数据库连接
-        cursor = connutil.get_cursor(connector)  # 获取数据库指针
+        connector = conn_util.get_connection()  # 获取数据库连接
+        cursor = conn_util.get_cursor(connector)  # 获取数据库指针
 
         data_set = execute_do_sql(cursor, sql_str)
-
     except Exception as e:
         print(e)
-        raise e
+        # raise e
     else:
         return data_set
-
     finally:
-        connutil.close_cursor(cursor)
-        connutil.close_connector(connector)
+        conn_util.close_cursor(cursor)
+        conn_util.close_connector(connector)
 
 
 # 批量执行非查询类sql语句
@@ -109,21 +106,18 @@ def batch_do_sql(sql_list: list):
     connector = None
     cursor = None
     try:
-        connector = connutil.get_connector()  # 获取数据库连接
-        cursor = connutil.get_cursor(connector)  # 获取数据库指针
+        connector = conn_util.get_connection()  # 获取数据库连接
+        cursor = conn_util.get_cursor(connector)  # 获取数据库指针
 
         data_set = execute_batch_do_sql(cursor, sql_list)
-
     except Exception as e:
         print(e)
-        raise e
-
+        # raise e
     else:
         return data_set
-
     finally:
-        connutil.close_cursor(cursor)
-        connutil.close_connector(connector)
+        conn_util.close_cursor(cursor)
+        conn_util.close_connector(connector)
 
 
 
