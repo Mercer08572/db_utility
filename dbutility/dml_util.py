@@ -12,8 +12,8 @@
 import time
 
 from pymysql.cursors import Cursor
-from dbutility.data_set import DataSet
-from dbutility import conn_util
+from .data_set import DataSet
+from . import conn_util
 
 
 # 准备使用decorator来封装方法
@@ -23,22 +23,56 @@ def datasetmaker(fun):
         data_set = DataSet()
         begin = time.time()
         data_set.exec_sql = args[1]
-        data_set.begin_time = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(begin))
-        data_set.data = fun(args[0], args[1])
+        # data_set.begin_time = time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(begin))
+        try:
+            data_set.data = fun(args[0], args[1])
+        except Exception as e:
+            data_set.failure_count += 1
+            data_set.message = str(e)
+        else:
+            data_set.success_count += 1
+            data_set.message = 'OK'
+        
         end = time.time()
-        data_set.end_time = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(end))
+        # data_set.end_time = time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(end))
         data_set.time_diff = round((end - begin), 2)
         # 日志记录暂时空缺
         return data_set
 
     return wrapper
 
+def datasetbathmaker(function):
+    def wrapper(*args):
+        data_set = DataSet()
+        begin = time.time()
+        data_set.exec_sql = args[1]
+        
+        # 如果是批量处理的话，则返回的是一个tuple
+        # (成功计数，失败计数，失败SQLs list)
+        result_tuple = function(args[0],args[1])
+        data_set.success_count = result_tuple[0]
+        data_set.failure_count = result_tuple[1]
+        # data_set.exec_sql = result_tuple[2]
+
+        if data_set.failure_count != 0:
+            # sqlList 中有执行错误的数据
+            data_set.message = f'执行SQL列表中有错误,具体sql:\n{result_tuple[2]}'
+        else:
+            data_set.message = 'OK'
+
+        return data_set
+    return wrapper
+
+
+
 
 # 查询sql语句执行结果封装方法 返回DataSet类型的数据
 @datasetmaker
 def execute_sql(cursor: Cursor, sql_str: str):
-
-    cursor.execute(sql_str)
+    try:
+        cursor.execute(sql_str)
+    except Exception as e:
+        raise Exception(f"查询SQL失败,具体原因：{e}")
 
     return cursor.fetchall()
 
@@ -47,19 +81,32 @@ def execute_sql(cursor: Cursor, sql_str: str):
 @datasetmaker
 def execute_do_sql(cursor: Cursor, sql_str: str):
 
-    cursor.execute(sql_str)
+    try:
+        cursor.execute(sql_str)
+    except Exception as e:
+        raise Exception(f"执行SQL失败,具体原因:{e}")
 
     return 'OK'
 
 
 # 非查询类语句批量处理
-@datasetmaker
+@datasetbathmaker
 def execute_batch_do_sql(cursor: Cursor, sql_list: list):
 
+    failure_count = 0
+    success_count = 0
+    failure_sqls = []
     for sql in sql_list:
-        cursor.execute(sql)
+        try:
+            cursor.execute(sql)
+        except Exception as e:
+            # 执行sql失败
+            failure_count += 1
+            failure_sqls.append(sql)
+        else:
+            success_count += 1
 
-    return 'OK'
+    return (success_count, failure_count, failure_sqls)
 
 
 # 执行查询sql语句

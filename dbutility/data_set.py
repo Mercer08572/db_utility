@@ -9,11 +9,14 @@
 class DataSet:
 
     def __init__(self):
-        self.begin_time = ""
-        self.exec_sql = ''
+        # self.begin_time = ""
+        self.exec_sql = None
         self.data = None  # 查询后的数据,如果是增删改,则是OK
-        self.end_time = ""
+        # self.end_time = ""
         self.time_diff = None
+        self.failure_count = 0
+        self.success_count = 0
+        self.message = ''
 
     def __str__(self):
         return f'begin_time:{self.begin_time}\n' \
