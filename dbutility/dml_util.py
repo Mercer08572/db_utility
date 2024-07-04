@@ -167,5 +167,26 @@ def batch_do_sql(sql_list: list):
         conn_util.close_connector(connector)
 
 
+# 插入数据并获取其自增ID
+def insert_get_id(sql_str:str):
+    connector = None
+    cursor = None
+    try:
+        connector = conn_util.get_connection()  # 获取数据库连接
+        cursor = conn_util.get_cursor(connector)  # 获取数据库指针
+
+        cursor.execute(sql_str)
+        inserted_id = cursor.lastrowid
+
+        connector.commit()
+        
+    except Exception as e:
+        print(e)
+        # raise e
+    else:
+        return inserted_id
+    finally:
+        conn_util.close_cursor(cursor)
+        conn_util.close_connector(connector)
 
 
